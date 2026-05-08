@@ -2,6 +2,7 @@ package com.senku.musicplayer
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,9 +26,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_AUDIO
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+
         hasPermission.value = ContextCompat.checkSelfPermission(
             this,
-            Manifest.permission.READ_MEDIA_AUDIO
+            permission
         ) == PackageManager.PERMISSION_GRANTED
 
         setContent {
@@ -37,9 +44,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     PermissionScreen(
                         onGrant = {
-                            permissionLauncher.launch(
-                                Manifest.permission.READ_MEDIA_AUDIO
-                            )
+                            permissionLauncher.launch(permission)
                         }
                     )
                 }
