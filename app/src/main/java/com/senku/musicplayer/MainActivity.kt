@@ -1,20 +1,47 @@
 package com.senku.musicplayer
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat
+import com.senku.musicplayer.ui.home.HomeScreen
+import com.senku.musicplayer.ui.permission.PermissionScreen
+import com.senku.musicplayer.ui.theme.NovaPlayerTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val hasPermission = mutableStateOf(false)
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasPermission.value = granted
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        hasPermission.value = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_MEDIA_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
         setContent {
-            MaterialTheme {
-                Surface {
-                    Text(text = "NovaPlayer")
+            NovaPlayerTheme {
+                if (hasPermission.value) {
+                    HomeScreen()
+                } else {
+                    PermissionScreen(
+                        onGrant = {
+                            permissionLauncher.launch(
+                                Manifest.permission.READ_MEDIA_AUDIO
+                            )
+                        }
+                    )
                 }
             }
         }
