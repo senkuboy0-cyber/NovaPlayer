@@ -20,16 +20,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.senku.musicplayer.player.PlayerManager
+import com.senku.musicplayer.ui.components.MiniPlayer
 import com.senku.musicplayer.ui.components.SongItem
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
+
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,15 +99,20 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
                 items(viewModel.songs) { song ->
                     SongItem(
                         song = song,
                         onClick = {
+                            PlayerManager.playSong(context, song)
                         }
                     )
                 }
             }
+
+            MiniPlayer()
         }
     }
 }
