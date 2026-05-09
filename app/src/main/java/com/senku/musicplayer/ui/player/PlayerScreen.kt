@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +47,7 @@ fun PlayerScreen() {
                     )
                 )
             )
-            .padding(32.dp),
+            .padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -90,6 +92,27 @@ fun PlayerScreen() {
             maxLines = 1
         )
 
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Slider(
+            value = 0f,
+            onValueChange = {},
+            modifier = Modifier.fillMaxWidth(),
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF6C63FF),
+                activeTrackColor = Color(0xFF6C63FF),
+                inactiveTrackColor = Color.DarkGray
+            )
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("0:00", color = Color.Gray, fontSize = 12.sp)
+            Text("0:00", color = Color.Gray, fontSize = 12.sp)
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
         Row(
@@ -100,7 +123,9 @@ fun PlayerScreen() {
             Icon(
                 painter = painterResource(id = android.R.drawable.ic_media_previous),
                 contentDescription = "Previous",
-                modifier = Modifier.size(48.dp).clickable { /* TODO */ },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { PlayerManager.previous() },
                 tint = Color.White
             )
 
@@ -128,7 +153,9 @@ fun PlayerScreen() {
             Icon(
                 painter = painterResource(id = android.R.drawable.ic_media_next),
                 contentDescription = "Next",
-                modifier = Modifier.size(48.dp).clickable { /* TODO */ },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { PlayerManager.next() },
                 tint = Color.White
             )
         }
