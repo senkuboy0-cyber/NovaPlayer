@@ -16,6 +16,22 @@ android {
         versionName = "1.0"
     }
 
+    splits {
+        abi {
+            isEnable = true
+            reset()
+
+            include(
+                "arm64-v8a",
+                "armeabi-v7a",
+                "x86",
+                "x86_64"
+            )
+
+            isUniversalApk = false
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -49,5 +65,6 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.media3:media3-session:1.5.1")
+
     implementation("org.videolan.android:libvlc-all:4.0.0-eap20")
 }
