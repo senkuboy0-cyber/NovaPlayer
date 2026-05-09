@@ -6,14 +6,20 @@ import androidx.compose.runtime.Composable
 
 private val AppColors = darkColorScheme(
     primary = Primary,
+    secondary = Accent,
     background = Background,
-    surface = Surface
+    surface = Surface,
+    onPrimary = TextPrimary,
+    onSecondary = TextPrimary,
+    onBackground = TextPrimary,
+    onSurface = TextPrimary
 )
 
 @Composable
 fun NovaPlayerTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = AppColors,
+        typography = Typography,
         content = content
     )
 }
