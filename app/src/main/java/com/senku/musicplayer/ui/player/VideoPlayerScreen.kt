@@ -1,7 +1,6 @@
 package com.senku.musicplayer.ui.player
 
 import android.net.Uri
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -35,26 +35,18 @@ fun VideoPlayerScreen(uriString: String?) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val libVLC = remember { LibVLC(context) }
+    val libVLC = remember {
+        val options = ArrayList<String>()
+        options.add("--no-drop-late-frames")
+        options.add("--no-skip-frames")
+        options.add("--rtsp-tcp")
+        options.add("-vvv")
+        LibVLC(context, options)
+    }
     val mediaPlayer = remember { MediaPlayer(libVLC) }
 
     var isPlaying by remember { mutableStateOf(true) }
     var showControls by remember { mutableStateOf(true) }
-
-    DisposableEffect(uriString) {
-        if (uriString != null) {
-            val media = Media(libVLC, Uri.parse(uriString))
-            mediaPlayer.media = media
-            media.release()
-            mediaPlayer.play()
-        }
-        onDispose {
-            mediaPlayer.stop()
-            mediaPlayer.detachViews()
-            mediaPlayer.release()
-            libVLC.release()
-        }
-    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -75,6 +67,15 @@ fun VideoPlayerScreen(uriString: String?) {
         }
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer.stop()
+            mediaPlayer.detachViews()
+            mediaPlayer.release()
+            libVLC.release()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -85,6 +86,13 @@ fun VideoPlayerScreen(uriString: String?) {
             factory = { ctx ->
                 VLCVideoLayout(ctx).apply {
                     mediaPlayer.attachViews(this, null, false, false)
+                    if (uriString != null) {
+                        val media = Media(libVLC, Uri.parse(uriString))
+                        media.setHWDecoderEnabled(true, false)
+                        mediaPlayer.media = media
+                        media.release()
+                        mediaPlayer.play()
+                    }
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -95,12 +103,13 @@ fun VideoPlayerScreen(uriString: String?) {
                 modifier = Modifier
                     .align(Alignment.Center)
                     .clickable {
-                        if (isPlaying) {
+                        if (mediaPlayer.isPlaying) {
                             mediaPlayer.pause()
+                            isPlaying = false
                         } else {
                             mediaPlayer.play()
+                            isPlaying = true
                         }
-                        isPlaying = !isPlaying
                     },
                 shape = CircleShape,
                 color = Color.Black.copy(alpha = 0.6f)

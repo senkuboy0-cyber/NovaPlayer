@@ -3,6 +3,7 @@ package com.senku.musicplayer.player
 import android.content.ComponentName
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -14,6 +15,9 @@ object PlayerManager {
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
     var mediaController: MediaController? = null
+
+    var currentPlaylist: List<Song> = emptyList()
+    var currentIndex: Int = -1
 
     val currentSong = mutableStateOf<Song?>(null)
     val isPlaying = mutableStateOf(false)
@@ -28,9 +32,21 @@ object PlayerManager {
                     override fun onIsPlayingChanged(isPlayingStatus: Boolean) {
                         isPlaying.value = isPlayingStatus
                     }
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        if (playbackState == Player.STATE_ENDED) {
+                            next()
+                        }
+                    }
                 })
-            }, androidx.core.content.ContextCompat.getMainExecutor(context))
+            }, ContextCompat.getMainExecutor(context))
         }
+    }
+
+    fun playPlaylist(context: Context, songs: List<Song>, startIndex: Int = 0) {
+        if (songs.isEmpty() || startIndex !in songs.indices) return
+        currentPlaylist = songs
+        currentIndex = startIndex
+        playSong(context, songs[currentIndex])
     }
 
     fun playSong(context: Context, song: Song) {
@@ -38,18 +54,16 @@ object PlayerManager {
         currentSong.value = song
         val mediaItem = MediaItem.fromUri(song.uri)
 
-        // Ensure controller is ready
         if (mediaController != null) {
             mediaController?.setMediaItem(mediaItem)
             mediaController?.prepare()
             mediaController?.play()
         } else {
-            // Wait for controller
             controllerFuture?.addListener({
                 mediaController?.setMediaItem(mediaItem)
                 mediaController?.prepare()
                 mediaController?.play()
-            }, androidx.core.content.ContextCompat.getMainExecutor(context))
+            }, ContextCompat.getMainExecutor(context))
         }
     }
 
@@ -59,6 +73,31 @@ object PlayerManager {
 
     fun resume() {
         mediaController?.play()
+    }
+
+    fun next() {
+        if (currentPlaylist.isEmpty()) return
+        currentIndex = (currentIndex + 1) % currentPlaylist.size
+        currentSong.value?.let {
+            // In a real app we'd pass context properly, but for simplified next we assume initialized
+            val mediaItem = MediaItem.fromUri(currentPlaylist[currentIndex].uri)
+            mediaController?.setMediaItem(mediaItem)
+            mediaController?.prepare()
+            mediaController?.play()
+            currentSong.value = currentPlaylist[currentIndex]
+        }
+    }
+
+    fun previous() {
+        if (currentPlaylist.isEmpty()) return
+        currentIndex = if (currentIndex - 1 < 0) currentPlaylist.size - 1 else currentIndex - 1
+        currentSong.value?.let {
+            val mediaItem = MediaItem.fromUri(currentPlaylist[currentIndex].uri)
+            mediaController?.setMediaItem(mediaItem)
+            mediaController?.prepare()
+            mediaController?.play()
+            currentSong.value = currentPlaylist[currentIndex]
+        }
     }
 
     fun release() {
