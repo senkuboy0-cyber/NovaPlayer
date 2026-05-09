@@ -1,6 +1,7 @@
 package com.senku.musicplayer.ui.player
 
 import android.net.Uri
+import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,43 +33,62 @@ import org.videolan.libvlc.util.VLCVideoLayout
 
 @Composable
 fun VideoPlayerScreen(uriString: String?) {
+
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val libVLC = remember {
-        val options = ArrayList<String>()
-        options.add("--no-drop-late-frames")
-        options.add("--no-skip-frames")
-        options.add("--rtsp-tcp")
-        options.add("-vvv")
-        LibVLC(context, options)
-    }
-    val mediaPlayer = remember { MediaPlayer(libVLC) }
-
-    var isPlaying by remember { mutableStateOf(true) }
+    var isPlaying by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
+
+    val libVLC = remember {
+        LibVLC(
+            context,
+            arrayListOf(
+                "--aout=opensles",
+                "--audio-time-stretch",
+                "--avcodec-skiploopfilter=0",
+                "--avcodec-skip-frame=0",
+                "--avcodec-skip-idct=0",
+                "--network-caching=150",
+                "--live-caching=150",
+                "--no-drop-late-frames",
+                "--no-skip-frames",
+                "--rtsp-tcp"
+            )
+        )
+    }
+
+    val mediaPlayer = remember {
+        MediaPlayer(libVLC)
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    mediaPlayer.pause()
-                    isPlaying = false
-                }
                 Lifecycle.Event.ON_RESUME -> {
-                    if (isPlaying) mediaPlayer.play()
+                    if (!mediaPlayer.isPlaying && isPlaying) {
+                        mediaPlayer.play()
+                    }
                 }
-                else -> {}
+
+                Lifecycle.Event.ON_PAUSE -> {
+                    if (mediaPlayer.isPlaying) {
+                        mediaPlayer.pause()
+                    }
+                }
+
+                Lifecycle.Event.ON_DESTROY -> {
+                    mediaPlayer.stop()
+                }
+
+                else -> Unit
             }
         }
+
         lifecycleOwner.lifecycle.addObserver(observer)
+
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
             mediaPlayer.stop()
             mediaPlayer.detachViews()
             mediaPlayer.release()
@@ -80,22 +100,41 @@ fun VideoPlayerScreen(uriString: String?) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable { showControls = !showControls }
+            .clickable {
+                showControls = !showControls
+            }
     ) {
+
         AndroidView(
+            modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
+
                 VLCVideoLayout(ctx).apply {
+
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+
                     mediaPlayer.attachViews(this, null, false, false)
-                    if (uriString != null) {
+
+                    if (!uriString.isNullOrEmpty()) {
+
                         val media = Media(libVLC, Uri.parse(uriString))
-                        media.setHWDecoderEnabled(true, false)
+
+                        media.setHWDecoderEnabled(true, true)
+                        media.addOption(":network-caching=150")
+                        media.addOption(":clock-jitter=0")
+                        media.addOption(":clock-synchro=0")
+
                         mediaPlayer.media = media
                         media.release()
+
                         mediaPlayer.play()
+                        isPlaying = true
                     }
                 }
-            },
-            modifier = Modifier.fillMaxSize()
+            }
         )
 
         if (showControls) {
@@ -116,11 +155,15 @@ fun VideoPlayerScreen(uriString: String?) {
             ) {
                 Icon(
                     painter = painterResource(
-                        id = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+                        id = if (mediaPlayer.isPlaying) {
+                            android.R.drawable.ic_media_pause
+                        } else {
+                            android.R.drawable.ic_media_play
+                        }
                     ),
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.padding(24.dp),
-                    tint = Color.White
+                    contentDescription = "Video Controls",
+                    tint = Color.White,
+                    modifier = Modifier.padding(24.dp)
                 )
             }
         }
