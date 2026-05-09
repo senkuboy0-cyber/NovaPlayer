@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+
   workflow_dispatch:
 
 permissions:
@@ -26,13 +27,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build Debug APK
-        run: gradle assembleDebug
+      - name: Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: Build Split Debug APKs
+        run: ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NovaPlayer-debug-apk
+          name: NovaPlayer-debug-apks
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Create GitHub Release
