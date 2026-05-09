@@ -9,5 +9,6 @@ data class Song(
     val album: String,
     val duration: Long,
     val uri: Uri,
-    val albumArt: Uri?
+    val albumArt: Uri?,
+    val isVideo: Boolean = false
 )

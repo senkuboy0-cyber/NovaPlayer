@@ -18,24 +18,26 @@ class MainActivity : ComponentActivity() {
     private val hasPermission = mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasPermission.value = granted
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasPermission.value = permissions.entries.all { it.value }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_AUDIO
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(
+                Manifest.permission.READ_MEDIA_AUDIO,
+                Manifest.permission.READ_MEDIA_VIDEO
+            )
         } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
 
-        hasPermission.value = ContextCompat.checkSelfPermission(
-            this,
-            permission
-        ) == PackageManager.PERMISSION_GRANTED
+        hasPermission.value = permissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
 
         setContent {
             NovaPlayerTheme {
@@ -44,7 +46,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     PermissionScreen(
                         onGrant = {
-                            permissionLauncher.launch(permission)
+                            permissionLauncher.launch(permissions)
                         }
                     )
                 }
